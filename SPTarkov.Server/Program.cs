@@ -1,15 +1,8 @@
-using System.Net;
-using System.Runtime;
 using System.Runtime.InteropServices;
-using System.Security.Authentication;
 using System.Text;
-using Microsoft.AspNetCore.Server.Kestrel.Https;
 using SPTarkov.Common.Semver;
 using SPTarkov.Common.Semver.Implementations;
 using SPTarkov.DI;
-using SPTarkov.Server.Core.Helpers;
-using SPTarkov.Server.Core.Loaders;
-using SPTarkov.Server.Core.Models.Spt.Config;
 using SPTarkov.Server.Core.Models.Spt.Mod;
 using SPTarkov.Server.Core.Models.Utils;
 using SPTarkov.Server.Core.Servers;
@@ -69,7 +62,7 @@ public static class Program
         builder.Services.AddSingleton<IReadOnlyList<SptMod>>(loadedMods);
         builder.Services.AddHostedService<SptServerBackgroundService>();
         // Configure Kestrel options
-        ConfigureKestrel(builder);
+        //ConfigureKestrel(builder);
 
         var app = builder.Build();
 
@@ -112,32 +105,6 @@ public static class Program
             async (HttpContext context, RequestDelegate _) =>
             {
                 await context.RequestServices.GetService<HttpServer>()!.HandleRequest(context);
-            }
-        );
-    }
-
-    private static void ConfigureKestrel(WebApplicationBuilder builder)
-    {
-        builder.WebHost.ConfigureKestrel(
-            (_, options) =>
-            {
-                var httpConfig = options
-                    .ApplicationServices.GetService<ConfigServer>()
-                    ?.GetConfig<HttpConfig>()!;
-                var certHelper = options.ApplicationServices.GetService<CertificateHelper>()!;
-                options.Listen(
-                    IPAddress.Parse(httpConfig.Ip),
-                    httpConfig.Port,
-                    listenOptions =>
-                    {
-                        listenOptions.UseHttps(opts =>
-                        {
-                            opts.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
-                            opts.ServerCertificate = certHelper.LoadOrGenerateCertificatePfx();
-                            opts.ClientCertificateMode = ClientCertificateMode.NoCertificate;
-                        });
-                    }
-                );
             }
         );
     }
